@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>TITO - SHOP</title>
+<style>
+  :root{
+    --bg:#0b0f1a; --card:#0f1724; --muted:#9aa4b2; --accent:#ec4899; --text:#f3f4f6;
+  }
+  body{margin:0;font-family:Inter, system-ui, Arial, sans-serif;background:linear-gradient(180deg,var(--bg),#071022);color:var(--text);-webkit-font-smoothing:antialiased}
+  .wrap{max-width:980px;margin:20px auto;padding:18px}
+  .card{background:linear-gradient(180deg,#071021,#0b1220);border-radius:12px;padding:16px;border:1px solid rgba(255,255,255,0.04);box-shadow:0 8px 30px rgba(0,0,0,0.6)}
+  header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
+  h1{margin:0;font-size:20px}
+  p.lead{margin:6px 0 0;color:var(--muted);font-size:13px}
+  .row{display:flex;gap:12px;align-items:center}
+  .col{flex:1}
+  .product{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.02);margin-bottom:10px;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent)}
+  .product input[type="checkbox"]{width:18px;height:18px}
+  .price{font-weight:700;color:var(--accent)}
+  label{cursor:pointer}
+  button{background:var(--accent);border:none;padding:10px 14px;border-radius:8px;color:white;font-weight:700;cursor:pointer}
+  button.secondary{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted)}
+  .small{font-size:13px;color:var(--muted)}
+  .muted{color:var(--muted)}
+  .grid{display:grid;grid-template-columns:1fr 360px;gap:12px}
+  .checkout{padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent)}
+  input[type="text"], input[type="email"], input[type="number"], select {width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:var(--text)}
+  textarea{width:100%;min-height:80px;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:var(--text)}
+  .qr{width:100%;height:220px;background:rgba(255,255,255,0.02);display:flex;align-items:center;justify-content:center;border-radius:8px;margin-bottom:8px}
+  .note{font-size:13px;color:var(--muted);margin-top:6px}
+  .receipt{background:rgba(255,255,255,0.02);padding:8px;border-radius:8px;margin-top:8px;font-size:13px}
+  .adminArea{margin-top:12px;padding:10px;border-radius:10px;border:1px dashed rgba(255,255,255,0.04)}
+  .hidden{display:none}
+  .flex{display:flex;gap:8px;align-items:center}
+  .center{display:flex;justify-content:center}
+  a.link{color:var(--accent);text-decoration:underline}
+  img.preview{max-width:160px;border-radius:6px;border:1px solid rgba(255,255,255,0.04);display:block;margin-top:8px}
+  .badge-paid{background:linear-gradient(90deg,#10b981,#06b6d4);padding:6px 8px;border-radius:6px;font-weight:700;color:#061018;font-size:12px}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <header>
+        <div>
+          <h1>TITO - SHOP</h1>
+          <p class="lead">Sell your PDF stories. Buyers pay via GCash or PayMaya. Admin uploads QR and PDFs in Admin Setup.</p>
+        </div>
+        <div class="small">Contact: @suma_langit on Instagram for payment issues</div>
+      </header>
+
+      <!-- AUTH -->
+      <section id="authSection" class="card" style="margin-bottom:12px">
+        <div class="row" style="justify-content:space-between;align-items:center">
+          <div>
+            <div class="small" id="authStatus">Not logged in</div>
+            <div style="margin-top:8px">
+              <input id="regEmail" type="email" placeholder="Your email" style="max-width:360px;display:inline-block"/>
+              <input id="regName" type="text" placeholder="Display name" style="max-width:200px;display:inline-block;margin-left:6px"/>
+              <button id="btnRegister">Register / Login</button>
+            </div>
+            <div class="note">Use a real email. Login is passwordless for ease. Admin verifies if needed.</div>
+          </div>
+          <div style="text-align:right">
+            <div id="userPanel" class="hidden">
+              <div class="small">Logged in as <span id="userName"></span></div>
+              <div style="margin-top:8px">
+                <button id="btnAccount" class="secondary">My Account</button>
+                <button id="btnLogout" class="secondary">Logout</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PRODUCTS + CHECKOUT -->
+      <div class="grid">
+        <div>
+          <h3 style="margin-top:0">Available Stories</h3>
+          <div id="productsList"></div>
+        </div>
+
+        <aside class="checkout">
+          <h4 style="margin:0 0 8px 0">Checkout</h4>
+          <div class="small">Selected: <span id="selectedCount">0</span> files</div>
+          <div class="small">Total: <span class="price" id="totalAmount">₱0.00</span></div>
+
+          <hr style="margin:8px 0;border-color:rgba(255,255,255,0.03)"/>
+
+          <div class="small">Buyer email (required)</div>
+          <input id="buyerEmail" type="email" placeholder="your@email.com" />
+
+          <div class="small" style="margin-top:8px">Choose payment method</div>
+          <select id="payMethod">
+            <option value="gcash">GCash (QR)</option>
+            <option value="paymaya">PayMaya (QR)</option>
+          </select>
+
+          <div style="margin-top:10px" class="qr" id="qrBox">Place your payment QR here (admin uploads QR in Admin)</div>
+          <div class="note">Scan the QR using GCash or PayMaya on your phone and send the exact total amount. After paying, come back and upload the payment screenshot and paste the transaction reference below.</div>
+
+          <div style="margin-top:10px">
+            <label class="small">Paid amount (₱)</label>
+            <input id="paidAmount" type="number" step="0.01" placeholder="Enter amount you paid" />
+          </div>
+
+          <div style="margin-top:8px">
+            <label class="small">Upload proof screenshot (required)</label>
+            <input id="proofFile" type="file" accept="image/*" />
+            <img id="proofPreview" class="preview hidden" alt="proof preview" />
+          </div>
+
+          <div style="margin-top:8px">
+            <label class="small">Paste transaction reference (required)</label>
+            <input id="txRef" type="text" placeholder="e.g., MMDD12345678" />
+          </div>
+
+          <div style="margin-top:10px" class="flex">
+            <button id="btnSubmitPayment">I paid - Submit proof & download</button>
+            <button id="btnClearCart" class="secondary">Clear</button>
+          </div>
+
+          <div id="checkoutMessage" class="note" style="margin-top:8px"></div>
+
+          <div id="receiptBox" class="receipt hidden"></div>
+        </aside>
+      </div>
+
+      <!-- ORDERS / DOWNLOADS -->
+      <section style="margin-top:12px" class="card">
+        <h3 style="margin-top:0">My Orders & Downloads</h3>
+        <div class="small">Only receipts/orders for the logged in email are shown here. If your order is PAID and delivered, download buttons will be active.</div>
+        <div id="ordersList" style="margin-top:8px"></div>
+      </section>
+
+      <!-- ADMIN -->
+      <section id="admin" class="adminArea">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div class="small">Admin setup (protected)</div>
+            <div class="note">Use the admin passcode to unlock upload controls. Upload PDFs and QR images for GCash and PayMaya.</div>
+          </div>
+          <div>
+            <input id="adminPass" type="password" placeholder="Admin passcode" />
+            <button id="btnAdminUnlock" class="secondary">Unlock</button>
+          </div>
+        </div>
+
+        <div id="adminControls" class="hidden" style="margin-top:12px">
+          <div class="small">Set QR images (GCash / PayMaya). Upload both QR codes here.</div>
+          <div style="display:flex;gap:8px;margin-top:6px;align-items:center">
+            <input id="qrGFile" type="file" accept="image/*" />
+            <input id="qrPFile" type="file" accept="image/*" />
+            <button id="btnSaveQR">Save QR</button>
+          </div>
+
+          <hr style="margin:10px 0;border-color:rgba(255,255,255,0.03)"/>
+
+          <div class="small">Upload up to 7 PDF story files and set their prices and titles</div>
+          <div id="pdfUploads" style="margin-top:8px"></div>
+
+          <div style="margin-top:8px">
+            <button id="btnSaveProducts">Save products</button>
+            <button id="btnResetProducts" class="secondary">Reset products to defaults</button>
+            <button id="btnExportOrders" class="secondary">Export Orders (JSON)</button>
+            <button id="btnClearData" class="secondary">Clear All Data</button>
+          </div>
+
+          <div id="adminMessage" class="note" style="margin-top:8px"></div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+<script>
+/*
+  TITO - SHOP
+  - Default product list is enforced only when local storage is missing or inconsistent
+  - Admin can reset products to defaults using the Reset button
+  - Prevent duplicate transaction references and duplicate proof images
+  - Auto delivery after successful local validation
+*/
+
+(async function(){
+  const $ = id => document.getElementById(id);
+  const fmt = n => "₱" + Number(n).toFixed(2);
+
+  function saveJSON(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
+  function loadJSON(k, fallback){ const v = localStorage.getItem(k); return v ? JSON.parse(v) : fallback; }
+
+  // IndexedDB helpers for storing PDF blobs
+  function openDB(){
+    return new Promise((res,rej)=>{
+      const r = indexedDB.open('storyshop-db', 1);
+      r.onupgradeneeded = e => {
+        const db = e.target.result;
+        if(!db.objectStoreNames.contains('files')) db.createObjectStore('files', { keyPath: 'id' });
+      };
+      r.onsuccess = e => res(e.target.result);
+      r.onerror = e => rej(e);
+    });
+  }
+  async function putFile(id, file){
+    const db = await openDB();
+    return new Promise((res, rej) => {
+      const tx = db.transaction('files', 'readwrite');
+      const store = tx.objectStore('files');
+      const reader = new FileReader();
+      reader.onload = () => {
+        const rec = { id, blob: reader.result, name: file.name, type: file.type };
+        store.put(rec);
+      };
+      reader.onerror = () => rej(reader.error);
+      reader.readAsDataURL(file);
+      tx.oncomplete = () => res(true);
+      tx.onerror = e => rej(e);
+    });
+  }
+  async function getFileDataURL(id){
+    const db = await openDB();
+    return new Promise((res, rej) => {
+      const tx = db.transaction('files','readonly');
+      const store = tx.objectStore('files');
+      const rq = store.get(id);
+      rq.onsuccess = e => res(e.target.result ? e.target.result.blob : null);
+      rq.onerror = e => rej(e);
+    });
+  }
+
+  // Products list exactly as requested
+  const DEFAULT_PRODUCTS = [
+    { id:'p1', title:'The Price of Revenge (PDF)', price:290, filename:null },
+    { id:'p2', title:'Loving You Is A Crime', price:400, filename:null },
+    { id:'p3', title:'Illegally Yours', price:450, filename:null },
+    { id:'p4', title:'Criminal Attraction', price:450, filename:null },
+    { id:'p5', title:'Last Special Chapter', price:270, filename:null },
+    { id:'p6', title:'Chapter 33', price:150, filename:null },
+    { id:'p7', title:'Chapter 34', price:150, filename:null }
+  ];
+
+  // Load products safely from localStorage
+  let PRODUCTS = loadJSON('store_products', null);
+  if(!Array.isArray(PRODUCTS) || PRODUCTS.length !== DEFAULT_PRODUCTS.length){
+    PRODUCTS = DEFAULT_PRODUCTS.slice();
+    saveJSON('store_products', PRODUCTS);
+  }
+
+  let ORDERS = loadJSON('store_orders', []) || [];
+  let QR = loadJSON('store_qr', null) || null;
+  let USERS = loadJSON('store_users', {}) || {};
+
+  const ADMIN_PASS = 'titoAdmin2025';
+
+  // UI refs
+  const productsList = $('productsList'), totalAmountSpan = $('totalAmount'), selectedCountSpan = $('selectedCount');
+  const buyerEmail = $('buyerEmail'), paidAmount = $('paidAmount'), proofFile = $('proofFile'), proofPreview = $('proofPreview'), txRef = $('txRef');
+  const btnSubmitPayment = $('btnSubmitPayment'), btnClearCart = $('btnClearCart'), checkoutMessage = $('checkoutMessage'), receiptBox = $('receiptBox');
+  const ordersList = $('ordersList');
+  const adminPass = $('adminPass'), btnAdminUnlock = $('btnAdminUnlock'), adminControls = $('adminControls');
+  const qrGFile = $('qrGFile'), qrPFile = $('qrPFile'), btnSaveQR = $('btnSaveQR'), pdfUploads = $('pdfUploads');
+  const btnSaveProducts = $('btnSaveProducts'), btnResetProducts = $('btnResetProducts'), btnExportOrders = $('btnExportOrders'), btnClearData = $('btnClearData'), adminMessage = $('adminMessage');
+  const authStatus = $('authStatus'), regEmail = $('regEmail'), regName = $('regName'), btnRegister = $('btnRegister');
+  const userPanel = $('userPanel'), userNameSpan = $('userName'), btnLogout = $('btnLogout'), btnAccount = $('btnAccount');
+  const qrBox = $('qrBox');
+
+  // state
+  let selectedIds = new Set();
+  let currentUser = null;
+
+  // render products
+  function renderProducts(){
+    productsList.innerHTML = '';
+    PRODUCTS.forEach(p=>{
+      const div = document.createElement('div');
+      div.className = 'product';
+      div.innerHTML = `
+        <input type="checkbox" id="chk_${p.id}" data-id="${p.id}" ${selectedIds.has(p.id)?'checked':''}/>
+        <div style="flex:1">
+          <label for="chk_${p.id}"><strong>${p.title}</strong></label>
+          <div class="small muted">${p.filename ? p.filename : 'PDF not uploaded yet'}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="price">${fmt(p.price)}</div>
+          <div class="small">ID: ${p.id}</div>
+        </div>
+      `;
+      productsList.appendChild(div);
+      div.querySelector('input').addEventListener('change', e=>{
+        const id = e.target.dataset.id;
+        if(e.target.checked) selectedIds.add(id); else selectedIds.delete(id);
+        updateTotals();
+      });
+    });
+    updateTotals();
+  }
+
+  function updateTotals(){
+    const selected = Array.from(selectedIds);
+    let total = 0;
+    selected.forEach(id => { const p = PRODUCTS.find(x=>x.id===id); if(p) total += Number(p.price||0); });
+    selectedCountSpan.textContent = selected.length;
+    totalAmountSpan.textContent = fmt(total);
+    buyerEmail.value = currentUser ? currentUser.email : '';
+  }
+
+  // registration / login
+  btnRegister.addEventListener('click', ()=>{
+    const email = (regEmail.value||'').trim().toLowerCase();
+    const name = (regName.value||'').trim() || email.split('@')[0];
+    if(!email || !/\S+@\S+\.\S+/.test(email)){ checkoutMessage.textContent = 'Enter a valid email'; return; }
+    USERS[email] = { email, name };
+    saveJSON('store_users', USERS);
+    currentUser = { email, name };
+    localStorage.setItem('current_user', JSON.stringify(currentUser));
+    showUser();
+    checkoutMessage.textContent = 'Logged in as ' + name;
+    updateTotals();
+  });
+
+  function showUser(){
+    const u = localStorage.getItem('current_user');
+    if(u){
+      currentUser = JSON.parse(u);
+      userPanel.classList.remove('hidden');
+      authStatus.textContent = '';
+      userNameSpan.textContent = currentUser.name + ' (' + currentUser.email + ')';
+      regEmail.value = '';
+      regName.value = '';
+    }
+  }
+
+  btnLogout.addEventListener('click', ()=>{
+    currentUser = null;
+    localStorage.removeItem('current_user');
+    userPanel.classList.add('hidden');
+    authStatus.textContent = 'Not logged in';
+  });
+
+  btnAccount.addEventListener('click', ()=>{
+    renderOrdersForUser();
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+  });
+
+  // proof preview
+  proofFile.addEventListener('change', async ()=>{
+    if(proofFile.files && proofFile.files[0]){
+      const d = await fileToDataURL(proofFile.files[0]);
+      proofPreview.src = d;
+      proofPreview.classList.remove('hidden');
+    } else {
+      proofPreview.src = '';
+      proofPreview.classList.add('hidden');
+    }
+  });
+
+  function fileToDataURL(file){
+    return new Promise((res, rej)=>{
+      const r = new FileReader();
+      r.onload = ()=> res(r.result);
+      r.onerror = ()=> rej(r.error);
+      r.readAsDataURL(file);
+    });
+  }
+
+  // prevent duplicate txRef and duplicate proof image checks
+  function txRefExists(ref){
+    if(!ref) return false;
+    return ORDERS.some(o => o.txRef && o.txRef.trim().toLowerCase() === ref.trim().toLowerCase());
+  }
+  function proofExists(dataURL){
+    if(!dataURL) return false;
+    return ORDERS.some(o => o.proofDataURL && o.proofDataURL === dataURL);
+  }
+
+  // submit payment
+  btnSubmitPayment.addEventListener('click', async ()=>{
+    checkoutMessage.textContent = '';
+    if(!currentUser){ checkoutMessage.textContent = 'You must register / login first'; return; }
+    const items = Array.from(selectedIds); if(items.length === 0){ checkoutMessage.textContent = 'No files selected'; return; }
+    let total = 0; items.forEach(id => { const p = PRODUCTS.find(x=>x.id===id); if(p) total += Number(p.price||0); });
+    const paid = Number((paidAmount.value||'0').trim()) || 0;
+    const tx = (txRef.value||'').trim();
+    if(!proofFile.files || !proofFile.files[0]){ checkoutMessage.textContent = 'Upload proof image (required)'; return; }
+    if(!tx){ checkoutMessage.textContent = 'Paste transaction reference (required)'; return; }
+    if(paid < total){ checkoutMessage.textContent = `Paid amount is less than total (${fmt(total)}). Enter exact or higher amount.`; return; }
+
+    // read proof
+    let proofDataURL;
+    try { proofDataURL = await fileToDataURL(proofFile.files[0]); } catch(e){ checkoutMessage.textContent = 'Error reading proof image'; return; }
+
+    // duplicates check
+    if(txRefExists(tx)){ checkoutMessage.textContent = 'This transaction reference was already used. If you paid, contact @suma_langit with proof and order id.'; return; }
+    if(proofExists(proofDataURL)){ checkoutMessage.textContent = 'This proof image was already used in another order. If you paid, contact @suma_langit with proof and order id.'; return; }
+
+    // create order
+    const orderId = 'ORD' + Date.now();
+    const order = {
+      orderId,
+      email: currentUser.email,
+      items,
+      total,
+      paidAmount: paid,
+      txRef: tx,
+      proofDataURL,
+      status: 'PAID',
+      createdAt: (new Date()).toISOString(),
+      sent: false
+    };
+    ORDERS.push(order);
+    saveJSON('store_orders', ORDERS);
+
+    showReceipt(order);
+    checkoutMessage.innerHTML = `Payment accepted. Preparing downloads. If you did not receive files, contact <strong>@suma_langit</strong> on Instagram with proof and Order ID: <strong>${orderId}</strong>.`;
+
+    // deliver files immediately
+    try {
+      for(const pid of order.items){
+        const product = PRODUCTS.find(p => p.id === pid);
+        if(!product || !product.filename){
+          alert('File not uploaded yet for ' + (product ? product.title : pid) + '. Contact @suma_langit');
+          continue;
+        }
+        const dataURL = await getFileDataURL(pid);
+        if(!dataURL){
+          alert('File missing for ' + pid + '. Contact @suma_langit with Order ID: ' + order.orderId);
+          continue;
+        }
+        triggerDownloadDataURL(dataURL, product.filename || (pid + '.pdf'));
+        await new Promise(r=>setTimeout(r, 300));
+      }
+      // mark sent
+      order.sent = true;
+      saveJSON('store_orders', ORDERS);
+      renderOrdersForUser();
+    } catch(err){
+      console.error('delivery error', err);
+      checkoutMessage.textContent = 'There was an error delivering files. Contact @suma_langit with Order ID: ' + orderId;
+    }
+
+    // reset
+    selectedIds.clear(); renderProducts();
+    paidAmount.value = ''; proofFile.value = null; proofPreview.src = ''; proofPreview.classList.add('hidden'); txRef.value = '';
+    renderOrdersForUser();
+  });
+
+  function triggerDownloadDataURL(dataURL, filename){
+    const a = document.createElement('a');
+    a.href = dataURL;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  // receipt
+  function showReceipt(order){
+    receiptBox.classList.remove('hidden');
+    const proofThumb = order.proofDataURL ? `<div style="margin-top:6px"><img src="${order.proofDataURL}" class="preview" alt="proof" /></div>` : '';
+    receiptBox.innerHTML = `<strong>Receipt</strong>
+      <div class="small">Order ID: ${order.orderId}</div>
+      <div class="small">Email: ${order.email}</div>
+      <div class="small">Items: ${order.items.join(', ')}</div>
+      <div class="small">Total: ${fmt(order.total)}</div>
+      <div class="small">Paid: ${fmt(order.paidAmount)}</div>
+      <div class="small">Transaction ref: ${order.txRef}</div>
+      <div class="small">Status: <strong>${order.status}</strong></div>
+      ${proofThumb}
+      <div style="margin-top:6px">
+        <button id="btnSendReceipt">Send receipt by email</button>
+      </div>`;
+    $('btnSendReceipt').addEventListener('click', ()=>{
+      const subject = encodeURIComponent('Your story order receipt ' + order.orderId);
+      const body = encodeURIComponent(`Thank you. Your order ${order.orderId}\nTotal: ${fmt(order.total)}\nPaid: ${fmt(order.paidAmount)}\nTransaction ref: ${order.txRef}\nIf you paid but did not receive your files, contact @suma_langit on Instagram with proof and Order ID.\n\n-- TITO - SHOP`);
+      window.location.href = `mailto:${order.email}?subject=${subject}&body=${body}`;
+    });
+  }
+
+  // render orders for user
+  function renderOrdersForUser(){
+    ordersList.innerHTML = '';
+    if(!currentUser){ ordersList.innerHTML = '<div class="small muted">Please login to see your orders</div>'; return; }
+    const userOrders = ORDERS.filter(o => o.email === currentUser.email).sort((a,b)=> b.createdAt.localeCompare(a.createdAt));
+    if(userOrders.length === 0){ ordersList.innerHTML = '<div class="small muted">No orders yet</div>'; return; }
+    userOrders.forEach(o=>{
+      const box = document.createElement('div'); box.className = 'receipt';
+      const paidBadge = o.status === 'PAID' ? '<span class="badge-paid">PAID</span>' : '';
+      box.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><strong>Order ${o.orderId}</strong> <div class="small muted">${new Date(o.createdAt).toLocaleString()}</div></div>
+          <div>${paidBadge}</div>
+        </div>
+        <div class="small">Items: ${o.items.join(', ')}</div>
+        <div class="small">Total: ${fmt(o.total)} | Paid: ${fmt(o.paidAmount)}</div>
+        <div style="margin-top:6px" class="flex">
+          ${o.status === 'PAID' && o.sent ? `<button data-order="${o.orderId}" class="btnDownload">Download files</button>` : `<button class="secondary" disabled>Download locked</button>`}
+          <button data-order="${o.orderId}" class="secondary btnContact">Contact IG</button>
+        </div>
+      `;
+      ordersList.appendChild(box);
+    });
+
+    // wire buttons
+    document.querySelectorAll('.btnDownload').forEach(btn => {
+      btn.addEventListener('click', async e=>{
+        const id = e.target.dataset.order;
+        const order = ORDERS.find(x=>x.orderId===id);
+        if(!order) return alert('Order not found');
+        if(order.status !== 'PAID' || !order.sent) return alert('Order not delivered yet');
+        for(const pid of order.items){
+          const p = PRODUCTS.find(x=>x.id===pid);
+          if(!p || !p.filename){ alert('File for ' + pid + ' not uploaded'); continue; }
+          const dataURL = await getFileDataURL(pid);
+          if(!dataURL){ alert('File not found for ' + pid); continue; }
+          triggerDownloadDataURL(dataURL, p.filename || (pid + '.pdf'));
+        }
+      });
+    });
+
+    document.querySelectorAll('.btnContact').forEach(btn => {
+      btn.addEventListener('click', e=>{
+        const oid = e.target.dataset.order;
+        window.open('https://instagram.com/suma_langit', '_blank');
+        alert('Contact @suma_langit on Instagram with proof and Order ID: ' + oid);
+      });
+    });
+  }
+
+  // Admin section
+  btnAdminUnlock.addEventListener('click', ()=>{
+    const pass = adminPass.value || '';
+    if(pass !== ADMIN_PASS){ adminMessage.textContent = 'Wrong passcode'; return; }
+    adminControls.classList.remove('hidden');
+    adminMessage.textContent = 'Admin unlocked. Upload QR and PDFs then Save Products.';
+    renderAdminUploads();
+  });
+
+  function renderAdminUploads(){
+    pdfUploads.innerHTML = '';
+    for(let i=0;i<PRODUCTS.length;i++){
+      const p = PRODUCTS[i];
+      const wrap = document.createElement('div');
+      wrap.style.marginBottom = '8px';
+      wrap.innerHTML = `
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="file" accept="application/pdf" data-index="${i}" />
+          <input type="text" placeholder="Title" value="${p.title}" data-index-title="${i}" style="flex:1" />
+          <input type="number" value="${p.price}" data-index-price="${i}" style="width:96px" />
+          <div class="small muted" style="min-width:160px">${p.filename || 'no file'}</div>
+        </div>
+      `;
+      pdfUploads.appendChild(wrap);
+    }
+  }
+
+  $('btnSaveProducts').addEventListener('click', async ()=>{
+    const fileInputs = pdfUploads.querySelectorAll('input[type="file"]');
+    const titleInputs = pdfUploads.querySelectorAll('input[data-index-title]');
+    const priceInputs = pdfUploads.querySelectorAll('input[data-index-price]');
+    for(let i=0;i<PRODUCTS.length;i++){
+      const p = PRODUCTS[i];
+      const fileInput = fileInputs[i];
+      const tInput = titleInputs[i];
+      const prInput = priceInputs[i];
+      p.title = tInput.value || p.title;
+      p.price = Number(prInput.value) || p.price;
+      if(fileInput && fileInput.files && fileInput.files[0]){
+        const file = fileInput.files[0];
+        await putFile(p.id, file);
+        p.filename = file.name;
+      }
+      PRODUCTS[i] = p;
+    }
+    saveJSON('store_products', PRODUCTS);
+    adminMessage.textContent = 'Products saved';
+    renderProducts();
+  });
+
+  // Reset products to defaults
+  btnResetProducts.addEventListener('click', ()=>{
+    if(!confirm('Reset product titles and prices to defaults? This will overwrite saved product metadata but not remove uploaded PDF blobs.')) return;
+    PRODUCTS = DEFAULT_PRODUCTS.slice();
+    saveJSON('store_products', PRODUCTS);
+    adminMessage.textContent = 'Products reset to defaults';
+    renderProducts();
+    renderAdminUploads();
+  });
+
+  // QR save
+  btnSaveQR.addEventListener('click', async ()=>{
+    const g = qrGFile.files[0], p = qrPFile.files[0];
+    if(!g && !p){ adminMessage.textContent = 'Choose at least one QR image to save'; return; }
+    QR = QR || {};
+    if(g) QR.gcash = await fileToDataURL(g);
+    if(p) QR.paymaya = await fileToDataURL(p);
+    saveJSON('store_qr', QR);
+    adminMessage.textContent = 'Saved QR images';
+    updateQRBox();
+  });
+
+  // export orders
+  btnExportOrders.addEventListener('click', ()=>{
+    const data = JSON.stringify(ORDERS, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'orders_export_' + Date.now() + '.json'; document.body.appendChild(a); a.click(); a.remove();
+  });
+
+  // clear data
+  btnClearData.addEventListener('click', ()=> {
+    if(!confirm('Clear all data including products and orders in this browser?')) return;
+    localStorage.clear();
+    const req = indexedDB.deleteDatabase('storyshop-db');
+    req.onsuccess = ()=> { alert('Cleared. Reloading.'); location.reload(); };
+  });
+
+  // QR display
+  function updateQRBox(){
+    qrBox.innerHTML = '';
+    if(!QR){ qrBox.textContent = 'Admin has not uploaded any QR images yet'; return; }
+    const sel = $('payMethod').value;
+    const imgSrc = sel === 'gcash' ? QR.gcash : QR.paymaya;
+    if(!imgSrc){ qrBox.textContent = 'QR not uploaded for this method'; return; }
+    const img = document.createElement('img'); img.src = imgSrc; img.style.maxWidth = '100%'; img.style.maxHeight = '100%';
+    qrBox.appendChild(img);
+    const note = document.createElement('div'); note.className='small muted'; note.textContent = 'Scan this QR in your GCash / PayMaya app and send the exact amount shown in Total.';
+    qrBox.appendChild(note);
+  }
+  $('payMethod').addEventListener('change', ()=> updateQRBox());
+
+  // initial render
+  renderProducts();
+  showUser();
+  renderOrdersForUser();
+  updateQRBox();
+
+  // expose helper globally
+  window.getFileDataURL = getFileDataURL;
+
+  // load current user from localStorage
+  (function init(){
+    const cu = localStorage.getItem('current_user');
+    if(cu){ currentUser = JSON.parse(cu); showUser(); }
+  })();
+
+})();
+</script>
+</body>
+</html>
